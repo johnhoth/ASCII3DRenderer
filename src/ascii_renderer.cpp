@@ -43,9 +43,6 @@ void renderASCII(const std::vector<ScreenLine>& lines) {
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
     
-    // Draw a border around the rendering area (optional)
-    box(stdscr, 0, 0);
-    
     // Render all lines
     for (const auto& line : lines) {
         drawLine(line.start, line.end);
