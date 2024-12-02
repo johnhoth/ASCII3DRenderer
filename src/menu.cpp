@@ -6,15 +6,18 @@ const char* MENU_POINTER = "> ";
 // Добавляем реализацию функции форматирования
 void formatSelectedLine(bool isSelected) {
     if (isSelected) {
-        attron(COLOR_PAIR(1) | A_BOLD);
+        attroff(A_NORMAL);
+        attron(COLOR_PAIR(1));
+        attron(A_BOLD);
     } else {
-        attroff(COLOR_PAIR(1) | A_BOLD);
+        attroff(COLOR_PAIR(1));
+        attroff(A_BOLD);
         attron(A_NORMAL);
     }
 }
 
 std::string addSpaceBetweenChars(const std::string& input) {
-    std::string result;
+    std::string result = " ";
     for (size_t i = 0; i < input.length(); ++i) {
         result += input[i];
         if (i < input.length() - 1) result += " ";
@@ -22,14 +25,25 @@ std::string addSpaceBetweenChars(const std::string& input) {
     return result;
 }
 
+// Добавляем новую функцию для отрисовки пункта меню
+void drawMenuItem(int row, int startCol, bool isSelected, const std::string& text) {
+    if (isSelected) {
+        formatSelectedLine(true);
+        mvprintw(row, startCol - SELECTION_OFFSET, "%s%s", MENU_POINTER, text.c_str());
+        formatSelectedLine(false);
+    } else {
+        mvprintw(row, startCol, "%s", text.c_str());
+    }
+}
+
 // В функции drawSettingsItem меняем логику атрибутов:
 void drawSettingsItem(int row, int startCol, int valueCol, int maxWidth, bool isSelected, 
                      bool isEditing, const std::string& text, float value = 0.0f, bool showValue = true) {
     if (isSelected) {
         formatSelectedLine(true);
-        mvprintw(row, startCol - SELECTION_OFFSET, "%s", MENU_POINTER);
+        // mvprintw(row, startCol , "", );
         std::string displayText = isEditing ? addSpaceBetweenChars(text) : text;
-        mvprintw(row, startCol, "%-*s", maxWidth, displayText.c_str());
+        mvprintw(row, startCol - SELECTION_OFFSET, "%s%-*s", MENU_POINTER, maxWidth, displayText.c_str());
         if (showValue) {
             mvprintw(row, valueCol, ": %.1f", value);
         }
@@ -66,16 +80,9 @@ void displayMenu(const std::vector<std::string>& options, int& selected, bool& q
         }
         int start_col = (cols - max_option_length) / 2;
 
-        // Draw the options with spacing between lines
+        // Draw the options
         for (size_t i = 0; i < options.size(); ++i) {
-            if (i == selected) {
-                formatSelectedLine(true);
-                mvprintw(rows / 2 - options.size() + i, start_col - SELECTION_OFFSET, "%s%s", 
-                        MENU_POINTER, options[i].c_str());
-                formatSelectedLine(false);
-            } else {
-                mvprintw(rows / 2 - options.size() + i, start_col, "%s", options[i].c_str());
-            }
+            drawMenuItem(rows / 2 - options.size() + i, start_col, i == selected, options[i]);
         }
 
         // Instructions
