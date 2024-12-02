@@ -1,18 +1,16 @@
 #include "menu.hpp"
 
-const int SELECTION_OFFSET = 3;  // Добавляем константу для отступа
+const int SELECTION_OFFSET = 3;  // offet for the selection pointer
 const char* MENU_POINTER = "> ";
 
-// Добавляем реализацию функции форматирования
+// Исправляем функцию formatSelectedLine
 void formatSelectedLine(bool isSelected) {
     if (isSelected) {
-        attroff(A_NORMAL);
-        attron(COLOR_PAIR(1));
-        attron(A_BOLD);
+        attron(COLOR_PAIR(1));  // Сначала включаем цвет
+        attron(A_BOLD);         // Затем включаем жирность
     } else {
-        attroff(COLOR_PAIR(1));
-        attroff(A_BOLD);
-        attron(A_NORMAL);
+        attroff(COLOR_PAIR(1)); // Сначала выключаем цвет
+        attroff(A_BOLD);        // Затем выключаем жирность
     }
 }
 
@@ -58,8 +56,21 @@ void drawSettingsItem(int row, int startCol, int valueCol, int maxWidth, bool is
 
 // Display the menu at the center of the screen
 void displayMenu(const std::vector<std::string>& options, int& selected, bool& quit) {
-    start_color();  // Добавляем инициализацию цветов
+    // Добавляем правильную инициализацию ncurses в начале функции
+    start_color();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);  // Скрываем курсор
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
+
+    // Важно! Проверяем поддержку жирного текста
+    if (!has_colors() || !can_change_color()) {
+        // Можно добавить обработку ошибки
+        printw("Your terminal does not support colors\n");
+        refresh();
+        return;
+    }
     
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
@@ -105,6 +116,10 @@ void displayMenu(const std::vector<std::string>& options, int& selected, bool& q
 
 void displaySettings(RenderSettings& settings) {
     start_color();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);
     init_pair(1, COLOR_GREEN, COLOR_BLACK);
     
     int rows, cols;
@@ -124,24 +139,25 @@ void displaySettings(RenderSettings& settings) {
     while (!exitSettings) {
         clear();
         std::string title = "Settings";
-        mvprintw(rows / 2 - 4, (cols - title.size()) / 2, title.c_str());
+        int settingsStartRow = rows / 2 - numSettings / 2;
+        mvprintw(settingsStartRow - 4, (cols - title.size()) / 2, title.c_str());
 
         // Display terminal info
-        mvprintw(rows / 2 - 2, (cols - 20) / 2, "Terminal size: %dx%d", cols, rows);
+        mvprintw(settingsStartRow - 2, (cols - 20) / 2, "Terminal size: %dx%d", cols, rows);
 
         const int settingsStartCol = (cols - (maxTextWidth + 10)) / 2; // 10 для значения и отступов
         const int valueColumn = settingsStartCol + maxTextWidth + 2; // позиция для значений
         
         // Draw settings items
-        drawSettingsItem(rows / 2, settingsStartCol, valueColumn, maxTextWidth,
+        drawSettingsItem(settingsStartRow, settingsStartCol, valueColumn, maxTextWidth,
                         selected == 0, isEditing && selected == 0,
                         settings.settingsOptions[0], settings.rotationSpeed);
         
-        drawSettingsItem(rows / 2 + 1, settingsStartCol, valueColumn, maxTextWidth,
+        drawSettingsItem(settingsStartRow + 1, settingsStartCol, valueColumn, maxTextWidth,
                         selected == 1, isEditing && selected == 1,
                         settings.settingsOptions[1], settings.cubeScale);
         
-        drawSettingsItem(rows / 2 + 2, settingsStartCol, valueColumn, maxTextWidth,
+        drawSettingsItem(settingsStartRow + 2, settingsStartCol, valueColumn, maxTextWidth,
                         selected == 2, false, "Back to Main Menu", 0, false);
 
         // Update instructions based on state
